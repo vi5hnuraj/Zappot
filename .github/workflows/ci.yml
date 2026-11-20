@@ -1,0 +1,15 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  sats:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: sats } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sats/package-lock.json
+      - run: npm ci
+      - run: npm test
