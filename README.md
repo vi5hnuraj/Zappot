@@ -4,6 +4,8 @@
 
 Built for the **[Dakar Bitcoin Hack by BTrust 2026](https://dakar-bitcoin-hack-2026.devpost.com/)**.
 
+**Live demo:** <https://zappot.vercel.app> — it opens in practice mode, so the whole circle is playable without a wallet and without co-members.
+
 ---
 
 ## The problem
