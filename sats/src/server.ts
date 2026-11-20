@@ -210,19 +210,33 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<boolea
     if (method !== 'GET' && method !== 'HEAD') throw new HttpError(405, 'Method', 'only GET is allowed');
     const rel = path === '/' ? 'index.html' : path.replace(/^\/+/, '');
     if (rel.includes('..')) throw new HttpError(400, 'BadPath', 'bad path');
-    const file = normalize(join(join(import.meta.dirname, '..', 'public'), rel));
-    try {
-      const data = await readFile(file);
-      const type =
-        { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' }[
-          extname(file)
-        ] ?? 'application/octet-stream';
-      res.writeHead(200, { 'content-type': type, 'cache-control': 'no-cache', 'x-content-type-options': 'nosniff' });
-      res.end(method === 'HEAD' ? undefined : data);
-      return true;
-    } catch {
-      throw new HttpError(404, 'NotFound', 'not found');
+
+    // Platforms in front of the app rewrite `/` to `/index` and drop extensions, so a request for a
+    // path without one is tried as a directory index and then as `.html` before it is a 404. Without
+    // this the app serves every file but its own front page behind such a proxy.
+    const root = join(import.meta.dirname, '..', 'public');
+    const candidates = extname(rel) ? [rel] : [`${rel}/index.html`, `${rel}.html`];
+    let file = '';
+    let data: Buffer | null = null;
+    for (const candidate of candidates) {
+      const full = normalize(join(root, candidate));
+      try {
+        data = await readFile(full);
+        file = full;
+        break;
+      } catch {
+        /* try the next candidate */
+      }
     }
+    if (!data) throw new HttpError(404, 'NotFound', 'not found');
+
+    const type =
+      { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' }[
+        extname(file)
+      ] ?? 'application/octet-stream';
+    res.writeHead(200, { 'content-type': type, 'cache-control': 'no-cache', 'x-content-type-options': 'nosniff' });
+    res.end(method === 'HEAD' ? undefined : data);
+    return true;
   }
 
   // --- health
