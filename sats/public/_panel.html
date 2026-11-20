@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Zappot video panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root { --paper: #f3eee4; --ink: #17140f; --muted: #6c655a; --line: #d8cfbf; --accent: #d2563b; --jade: #1e6b52; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: var(--paper); color: var(--ink); }
+      body {
+        width: 700px; height: 1080px; overflow: hidden;
+        font-family: 'Inter', sans-serif; padding: 52px 44px 40px;
+        display: flex; flex-direction: column;
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-family: 'Fraunces', serif; font-size: 30px; font-weight: 700; }
+      .brand svg { width: 30px; height: 30px; }
+      .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 13.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 54px 0 14px; }
+      h1 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 62px; line-height: 1.04; letter-spacing: -0.01em; margin: 0; }
+      h1 em { font-style: italic; color: var(--accent); }
+      .intro { font-size: 17px; line-height: 1.55; color: #3a342b; margin: 22px 0 0; max-width: 560px; }
+      ol { list-style: none; margin: 40px 0 0; padding: 0; display: flex; flex-direction: column; gap: 17px; }
+      li { display: flex; align-items: flex-start; gap: 15px; font-size: 16px; color: #8b8375; line-height: 1.35; }
+      li .n {
+        flex: none; width: 31px; height: 31px; border-radius: 50%;
+        border: 2px solid #c9c0af; background: transparent;
+        display: grid; place-items: center;
+        font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px; color: #8b8375;
+      }
+      li.done { color: #3a342b; }
+      li.done .n { background: var(--jade); border-color: var(--jade); color: #fff; }
+      li.now { color: var(--ink); font-weight: 600; }
+      li.now .n { background: var(--accent); border-color: var(--accent); color: #fff; }
+      li p { margin: 5px 0 0; }
+      .foot { margin-top: auto; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+      .foot b { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.5" fill="none" stroke="#d2563b" stroke-width="4.2" stroke-dasharray="44 10" transform="rotate(-38 12 12)" />
+      </svg>
+      Zappot
+    </div>
+
+    <p class="eyebrow">Try it alone · sats on lightning</p>
+    <h1>One person.<br />A whole circle.</h1>
+    <p class="intro">
+      You and three simulated members. They join, pay every round and settle with you — every step
+      below is a real request to the coordinator.
+    </p>
+
+    <ol id="list"></ol>
+
+    <p class="foot">A real 3-minute run, <b>condensed for this video</b>.</p>
+
+    <script>
+      const steps = [
+        { t: 'Create the practice circle', b: 'Four seats, 21 sats a round, 1-minute rounds. With a Lightning wallet connected you pay a real invoice; without one the payments are recorded and nothing moves.' },
+        { t: 'Take your seat', b: 'You join like everyone else: 21 sats of collateral is locked until the circle ends. The simulated members join on their own.' },
+        { t: 'Pay round 1. The bots pay too', b: 'Your contribution is 21 sats, paid to a Lightning invoice. The simulated members pay the same amount into the pot.' },
+        { t: 'Outbid the bots for the pot', b: 'Bid a discount in sats. The highest bid takes this round’s pot at the deadline, and the discount is shared by everyone else.' },
+        { t: 'Close round 1', b: 'The pot goes to the winning bid, and any missed contribution is covered from collateral.' },
+        { t: 'Claim your payout', b: 'If you took the pot, the coordinator pays you over Lightning in one click.' },
+        { t: 'Play the remaining rounds', b: 'Everyone pays, one member takes the pot, round after round, until every seat has had one.' },
+        { t: 'Take your collateral and bond back', b: 'When the last round closes, your collateral and any bond comes back to you.' },
+        { t: 'See your savings record', b: 'Every finished circle writes your on-time payments to a score any lender, merchant or future circle can read.' },
+      ];
+      const done = Number(new URLSearchParams(location.search).get('done') ?? 0);
+      const list = document.getElementById('list');
+      list.innerHTML = steps
+        .map((s, i) => {
+          const cls = i < done ? 'done' : i === done ? 'now' : '';
+          const mark = i < done
+            ? '<svg width="15" height="15" viewBox="0 0 256 256"><path d="M224 128a8 8 0 0 1-11.32 5.66L104 241.34a8 8 0 0 1-11.32-11.32L152 160.94 56.94 66.6a8 8 0 0 1 11.32-11.32L160 154.75l57.34-57.41A8 8 0 0 1 224 128Z" fill="currentColor"/></svg>'
+            : String(i + 1);
+          const body = done > i ? `<p>${s.b}</p>` : '';
+          return `<li class="${cls}"><span class="n">${mark}</span><div><h3 style="font-family:'Fraunces',serif;font-size:16.5px;font-weight:600;margin:0">${s.t}</h3>${body}</div></li>`;
+        })
+        .join('');
+    </script>
+  </body>
+</html>

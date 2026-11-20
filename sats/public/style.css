@@ -1,0 +1,9 @@
+/* ... existing CSS ... */
+
+/* ------------------------------------------------ compact: the whole practice flow fits on one screen */
+.page.practice { padding-top: 24px; padding-bottom: 48px; }
+.practice h1 { font-size: clamp(26px, 2.9vw, 40px); }
+.practice .eyebrow { margin-bottom: 6px; }
+.practice .lede { font-size: 15px; line-height: 1.5; margin: 4px 0 0; max-width: 720px; }
+.practice .steps-list li h3 { font-size: 16px; }
+.practice .steps-list li p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.45; }
