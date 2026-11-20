@@ -228,7 +228,17 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<boolea
         /* try the next candidate */
       }
     }
-    if (!data) throw new HttpError(404, 'NotFound', 'not found');
+    if (!data) {
+      // A static host in front of the app publishes `public/` itself and may keep it out of the
+      // function bundle, so the front page is not on this disk even though the host serves it.
+      // Send the visitor to it instead of answering the app's own root with a 404.
+      if ((path === '/' || path === '/index') && method === 'GET') {
+        res.writeHead(302, { location: '/index.html', 'cache-control': 'no-store' });
+        res.end();
+        return true;
+      }
+      throw new HttpError(404, 'NotFound', 'not found');
+    }
 
     const type =
       { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' }[
