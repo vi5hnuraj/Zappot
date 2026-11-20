@@ -6,7 +6,8 @@
  * circles keyed by id, plus the coordinator's Nostr identity.
  */
 
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Circle } from './circle.ts';
 import type { Identity } from './nostr.ts';
@@ -32,6 +33,8 @@ export class Store {
   dir: string;
   file: string;
   data: Db;
+  /** True when no directory could be written to, so the state lives in memory for this process. */
+  readOnly = false;
   #queue: Promise<void> = Promise.resolve();
 
   constructor(dir: string) {
@@ -40,8 +43,32 @@ export class Store {
     this.data = { circles: {} };
   }
 
+  /** A directory is only usable if a file can actually be created in it (serverless disks are read-only). */
+  static async writable(dir: string): Promise<boolean> {
+    try {
+      await mkdir(dir, { recursive: true });
+      const probe = join(dir, `.probe-${process.pid}`);
+      await writeFile(probe, '');
+      await rm(probe, { force: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async load(): Promise<void> {
-    await mkdir(this.dir, { recursive: true });
+    if (!(await Store.writable(this.dir))) {
+      const configured = this.dir;
+      const fallback = join(tmpdir(), 'zappot');
+      if (await Store.writable(fallback)) {
+        this.dir = fallback;
+        this.file = join(fallback, 'circles.json');
+        console.warn(`state directory ${configured} is not writable; using ${fallback}`);
+      } else {
+        this.readOnly = true;
+        console.warn('no writable state directory; circles will only live in memory');
+      }
+    }
     try {
       const raw = await readFile(this.file, 'utf8');
       const parsed = JSON.parse(raw) as Db;
@@ -75,12 +102,21 @@ export class Store {
     await this.flush();
   }
 
-  /** Serialise writes so two requests cannot interleave a rename. */
+  /**
+   * Serialise writes so two requests cannot interleave a rename. A failed write is reported and
+   * never rejects: an unhandled rejection here would take the whole coordinator down mid-request.
+   */
   async flush(): Promise<void> {
+    if (this.readOnly) return;
     this.#queue = this.#queue.then(async () => {
       const tmp = `${this.file}.tmp`;
-      await writeFile(tmp, JSON.stringify(this.data, null, 2), { mode: 0o600 });
-      await rename(tmp, this.file);
+      try {
+        await writeFile(tmp, JSON.stringify(this.data, null, 2), { mode: 0o600 });
+        await rename(tmp, this.file);
+      } catch (e) {
+        this.readOnly = true;
+        console.warn(`could not persist ${this.file}: ${(e as Error).message}; keeping state in memory`);
+      }
     });
     await this.#queue;
   }
