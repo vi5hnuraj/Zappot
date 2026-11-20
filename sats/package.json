@@ -1,0 +1,21 @@
+{
+  "name": "zappot-sats",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Zappot Sats — rotating savings circles settled on Lightning, coordinated over Nostr, with an AI coordinator",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "start": "node src/server.ts",
+    "dev": "node --watch src/server.ts",
+    "test": "node --test test/*.test.ts",
+    "nwc:smoke": "node src/smoke.ts",
+    "build:browser": "bun build browser/guest-signer.ts --outfile public/vendor/guest-nostr.js --format=esm --minify"
+  },
+  "dependencies": {
+    "@scure/base": "^2.4.0",
+    "nostr-tools": "^2.10.4"
+  }
+}
